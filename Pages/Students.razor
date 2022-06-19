@@ -1,0 +1,77 @@
+@page "/students"
+@inject IStudentService StudentService
+@inject IJSRuntime js
+@inject NavigationManager naviagtor
+
+<h3>Students</h3>
+<table>
+    <thead>
+        <tr>
+            <th @onclick="@(()=>Sort("Avatar"))">Avatar</th>
+            <th @onclick="@(()=>Sort("Name"))">Name</th>
+            <th @onclick="@(()=>Sort("LastName"))">LastName</th>
+            <th @onclick="@(()=>Sort("BirthDate"))">BirthDate</th>
+            <th @onclick="@(()=>Sort("Studies"))">Studies</th>
+            <th>Actions</th>
+
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var stud in StudentsList){
+            <tr>
+                <td><img alt="" src="@stud.Avatar"></td>
+                <td>@stud.Name</td>
+                <td>@stud.LastName</td>
+                <td>@stud.BirthDate.ToShortDateString()</td>
+                <td>@stud.Studies</td>
+                <td>
+                    <button @onclick="@(() => DeleteStudent(@stud.ID))">Delete</button>
+                    <button @onclick="@(()=> ShowDetails(@stud.ID))">Details</button>
+                </td>
+
+            </tr>
+        }
+    </tbody>
+</table>
+
+
+@code {
+    public List<Student> StudentsList {get;set;}
+        public KeyValuePair<string,bool>ColumnSort {get;set;}=new KeyValuePair<string, bool>("",false);
+
+        protected override void OnInitialized()
+        {
+            StudentsList = StudentService.GetStudents();
+        }
+
+        private void SortAsc(string columnName){
+            StudentsList=StudentsList.OrderBy(e=>e.GetType().GetProperty(columnName).GetValue(e,null)).ToList();
+        }
+
+        private void SortDesc(string columnName){
+            StudentsList=StudentsList.OrderByDescending(e=>e.GetType().GetProperty(columnName).GetValue(e,null)).ToList();
+        }
+        private void Sort(string columnName){
+            if(ColumnSort.Key!=columnName){
+                ColumnSort=new KeyValuePair<string, bool>(columnName,false);
+            }else{
+                ColumnSort=new KeyValuePair<string, bool>(columnName,!ColumnSort.Value);
+            }
+
+            if(ColumnSort.Value){
+                SortDesc(columnName);
+            }else{
+                SortAsc(columnName);
+            }
+        }
+
+        private async void DeleteStudent(int id){
+            var result= await js.InvokeAsync<bool>("confirm","Are you sure? ");
+                if(result){
+            StudentService.Remove(id);
+                }
+        }
+        private void ShowDetails(int id){
+            naviagtor.NavigateTo("/students/"+id);
+        }
+}
